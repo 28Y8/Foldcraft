@@ -1,0 +1,20 @@
+# .NET build output
+[Bb]in/
+[Oo]bj/
+publish/
+
+# Release and test builds
+artifacts/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Test results
+TestResults/
+*.trx
+coverage*.xml
+*.binlog

@@ -1,0 +1,19 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!--
+        Windows lets people pick any accent color, and the theme always puts white text on it in
+        light mode, which is unreadable on yellow or amber. This chooses black or white from the
+        color actually behind the text. It is merged by each view rather than by App.xaml,
+        because AccentButtonStyle only exists once the Fluent theme has loaded.
+    -->
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="True">
+                <Setter Property="Foreground"
+                        Value="{Binding Background, RelativeSource={RelativeSource Self}, Converter={StaticResource ReadableTextOn}}" />
+            </Trigger>
+        </Style.Triggers>
+    </Style>
+
+</ResourceDictionary>

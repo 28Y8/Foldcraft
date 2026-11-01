@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build Foldcraft.sln --configuration Release
+
+      - name: Test
+        run: >
+          dotnet test Foldcraft.sln --configuration Release --no-build
+          --filter "Category!=Desktop"
+          --logger "trx;LogFileName=tests.trx" --results-directory TestResults
+
+      # These open a real window, which depends on the runner's desktop and screen size. A
+      # failure here shows up in the log without failing the run. Run them locally before a release.
+      - name: Test (needs a desktop)
+        continue-on-error: true
+        timeout-minutes: 8
+        run: >
+          dotnet test Foldcraft.sln --configuration Release --no-build
+          --filter "Category=Desktop"
+          --logger "trx;LogFileName=desktop-tests.trx" --results-directory TestResults
+
+      - name: Keep the test results
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-results
+          path: TestResults
+          if-no-files-found: ignore
+          retention-days: 14

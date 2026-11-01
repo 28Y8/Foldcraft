@@ -1,0 +1,64 @@
+<UserControl x:Class="Foldcraft.App.Views.AboutView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="900" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Margin="{StaticResource PageMargin}">
+                <StackPanel Orientation="Horizontal">
+                    <Image Width="72" Height="72" Margin="0,0,16,0"
+                           Source="pack://application:,,,/Foldcraft;component/Assets/Foldcraft.ico"
+                           RenderOptions.BitmapScalingMode="HighQuality" />
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="Foldcraft" Style="{StaticResource PageTitle}" />
+                        <TextBlock Text="{Binding Version}" Style="{StaticResource Caption}" />
+                    </StackPanel>
+                </StackPanel>
+
+                <Border Style="{StaticResource SettingCard}" Margin="0,16,0,4">
+                    <TextBlock Text="{Binding Explanation}" Style="{StaticResource Body}" />
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <TextBlock Text="Apps and games" Style="{StaticResource Strong}" />
+                        <TextBlock Text="{Binding AppsNotice}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <TextBlock Text="Updates and privacy" Style="{StaticResource Strong}" />
+                        <TextBlock Text="{Binding UpdatesNotice}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <TextBlock Text="License" Style="{StaticResource Strong}" />
+                        <TextBlock Text="{Binding License}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        <TextBlock Style="{StaticResource Body}" Margin="0,8,0,0">
+                            <Hyperlink Command="{Binding OpenLicenseCommand}" Foreground="{DynamicResource TextFillColorPrimaryBrush}">Read the license</Hyperlink>
+                            <Run Text="   " />
+                            <Hyperlink Command="{Binding OpenProjectCommand}" Foreground="{DynamicResource TextFillColorPrimaryBrush}">Project page on GitHub</Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <TextBlock Text="Where Foldcraft keeps its own files" Style="{StaticResource Strong}" />
+                        <TextBox Text="{Binding DataDirectory, Mode=OneWay}" IsReadOnly="True" Margin="0,8,0,0"
+                                 AutomationProperties.Name="Where Foldcraft keeps its own files" />
+                        <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                   Text="Your customized folders use the icons kept here, so leave this folder in place while you use them." />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

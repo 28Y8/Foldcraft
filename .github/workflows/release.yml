@@ -1,0 +1,127 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  # Everything that runs the project's code or its packages happens here, with a token that can
+  # only read and with no credentials left on disk.
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Check the tag matches the project version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (dotnet msbuild src/Foldcraft.App/Foldcraft.App.csproj -getProperty:Version).Trim()
+          if ("v$version" -ne $env:GITHUB_REF_NAME) {
+            throw "The tag is $env:GITHUB_REF_NAME but Directory.Build.props says $version."
+          }
+          "VERSION=$version" >> $env:GITHUB_ENV
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Test
+        run: dotnet test Foldcraft.sln --configuration Release --filter "Category!=Desktop"
+
+      - name: Restore the packaging tool
+        run: dotnet tool restore
+
+      # The newest full package is what vpk compares against to make a delta update. A first
+      # release has none, and vpk says so and carries on.
+      - name: Get the previous release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          dotnet vpk --skip-updates download github
+          --repoUrl "https://github.com/$env:GITHUB_REPOSITORY"
+          --channel win
+          --token $env:GH_TOKEN
+          --outputDir artifacts/installer
+
+      - name: Build the installer, update packages and zip
+        shell: pwsh
+        run: ./tools/package.ps1 -Version $env:VERSION -Output artifacts -KeepPreviousPackages
+
+      - name: Keep what the release needs
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: release
+          path: |
+            artifacts/Foldcraft-${{ env.VERSION }}-win-x64.zip
+            artifacts/Foldcraft-${{ env.VERSION }}-win-x64.zip.sha256
+            artifacts/installer
+          if-no-files-found: error
+          retention-days: 7
+
+  # This job can write to the repository, so it runs nothing of the project's. It puts up what the
+  # build job made, using only the tool pinned in dotnet-tools.json.
+  publish:
+    needs: build
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+
+    env:
+      VERSION: ${{ needs.build.outputs.version }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release
+          path: artifacts
+
+      - name: Restore the packaging tool
+        run: dotnet tool restore
+
+      # This stays a draft until every file is up, so nobody can be offered half a release.
+      - name: Create the draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $files = "artifacts/Foldcraft-$env:VERSION-win-x64.zip", "artifacts/Foldcraft-$env:VERSION-win-x64.zip.sha256"
+          $prerelease = if ($env:VERSION -match '-') { '--prerelease' } else { $null }
+          gh release create $env:GITHUB_REF_NAME @files --draft --title "Foldcraft $env:VERSION" --generate-notes $prerelease
+
+      - name: Upload the installer and update packages and publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          dotnet vpk --skip-updates upload github
+          --repoUrl "https://github.com/$env:GITHUB_REPOSITORY"
+          --channel win
+          --token $env:GH_TOKEN
+          --outputDir artifacts/installer
+          --tag $env:GITHUB_REF_NAME
+          --releaseName "Foldcraft $env:VERSION"
+          --merge
+          --publish

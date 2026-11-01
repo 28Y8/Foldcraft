@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>Foldcraft</AssemblyName>
+    <RootNamespace>Foldcraft.App</RootNamespace>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\Foldcraft.ico</ApplicationIcon>
+    <!-- Installer hooks have to run ahead of WPF, so the app starts from Program.Main. -->
+    <StartupObject>Foldcraft.App.Program</StartupObject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Velopack" Version="1.2.161" />
+  </ItemGroup>
+
+  <!--
+    Only the end-to-end update test sets this, to point a build at a local folder. A shipped build
+    has no such setting, so nothing at run time can send it to another update source.
+  -->
+  <ItemGroup Condition="'$(FoldcraftTestUpdateFeed)' != ''">
+    <AssemblyMetadata Include="FoldcraftTestUpdateFeed" Value="$(FoldcraftTestUpdateFeed)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Foldcraft.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- WPF projects drop this implicit using, because of System.Windows.Shapes.Path. -->
+    <Using Include="System.IO" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Foldcraft.Core\Foldcraft.Core.csproj" />
+  </ItemGroup>
+
+</Project>
