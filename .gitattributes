@@ -1,0 +1,12 @@
+# Text is stored and checked out with LF everywhere. Several tests hold multi-line text in raw
+# string literals, so a checkout that turned these into CRLF would change what the tests compare.
+* text=auto eol=lf
+
+# Windows tools expect these with CRLF.
+*.sln text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never touch these. The icon is compared byte for byte by a test.
+*.ico binary
+*.png binary

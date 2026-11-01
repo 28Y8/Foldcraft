@@ -1,0 +1,146 @@
+<UserControl x:Class="Foldcraft.App.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foldcraft.App.Views">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" MaxWidth="900" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Margin="{StaticResource PageMargin}">
+                <TextBlock Text="Settings" Style="{StaticResource PageTitle}" />
+
+                <TextBlock Text="Appearance" Style="{StaticResource SettingGroup}" />
+
+                <Border Style="{StaticResource SettingCard}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE706;" Style="{StaticResource SettingIcon}" />
+                        <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding ThemeModes}" SelectedItem="{Binding SelectedThemeMode}" DisplayMemberPath="Name"
+                                  MinWidth="180" Margin="16,0,0,0" VerticalAlignment="Center"
+                                  AutomationProperties.Name="App colors" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="App colors" Style="{StaticResource Strong}" />
+                            <TextBlock Text="Light, dark or the same as Windows." Style="{StaticResource Caption}" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="File Explorer" Style="{StaticResource SettingGroup}" />
+
+                <Border Style="{StaticResource SettingCard}">
+                    <StackPanel>
+                        <DockPanel>
+                            <TextBlock DockPanel.Dock="Left" Text="&#xE8DE;" Style="{StaticResource SettingIcon}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                            <CheckBox DockPanel.Dock="Right" Style="{StaticResource SwitchBox}" Margin="16,0,0,0" VerticalAlignment="Top"
+                                      IsChecked="{Binding IsRightClickEnabled, Mode=OneWay}"
+                                      Command="{Binding ToggleRightClickCommand}"
+                                      AutomationProperties.Name="Add Customize with Foldcraft to the right-click menu for folders" />
+                            <StackPanel>
+                                <TextBlock Text="Right-click menu" Style="{StaticResource Strong}" />
+                                <TextBlock Text="{Binding RightClickExplanation}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding RightClickWindows11Note}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                                <TextBlock Text="{Binding RightClickMessage, NotifyOnTargetUpdated=True}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                           Foreground="{DynamicResource SystemFillColorCautionBrush}"
+                                           views:LiveRegion.Announce="True"
+                                           AutomationProperties.LiveSetting="Polite"
+                                           Visibility="{Binding RightClickMessage, Converter={StaticResource TextToVisible}}" />
+                                <Button Content="Update Entry" Command="{Binding UpdateRightClickCommand}" Margin="0,8,0,0" HorizontalAlignment="Left"
+                                        ToolTip="Point the right-click entry at this copy of Foldcraft"
+                                        Visibility="{Binding RightClickIsOutdated, Converter={StaticResource BoolToVisible}}" />
+                            </StackPanel>
+                        </DockPanel>
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Updates" Style="{StaticResource SettingGroup}" />
+
+                <Border Style="{StaticResource SettingCard}" DataContext="{Binding Updates}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE895;" Style="{StaticResource SettingIcon}" VerticalAlignment="Top" Margin="0,2,0,0" />
+
+                        <Grid>
+                            <!-- A copy that can update itself. -->
+                            <StackPanel Visibility="{Binding CanUpdate, Converter={StaticResource BoolToVisible}}">
+                                <DockPanel>
+                                    <CheckBox DockPanel.Dock="Right" Style="{StaticResource SwitchBox}" Margin="16,0,0,0" VerticalAlignment="Top"
+                                              IsChecked="{Binding CheckAutomatically}"
+                                              AutomationProperties.Name="Check for updates automatically" />
+                                    <StackPanel>
+                                        <TextBlock Text="Check for updates automatically" Style="{StaticResource Strong}" />
+                                        <TextBlock Text="{Binding PrivacyNote}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <DockPanel Margin="0,8,0,0">
+                                    <Button DockPanel.Dock="Right" Content="Check for Updates" Command="{Binding CheckCommand}" Margin="16,0,0,0" VerticalAlignment="Center" />
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding CurrentVersion}" Style="{StaticResource Caption}" />
+                                        <TextBlock Text="{Binding LastChecked}" Style="{StaticResource Caption}" />
+                                    </StackPanel>
+                                </DockPanel>
+
+                                <TextBlock Text="{Binding CheckMessage, NotifyOnTargetUpdated=True}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                           views:LiveRegion.Announce="True"
+                                           AutomationProperties.LiveSetting="Polite"
+                                           Visibility="{Binding CheckMessage, Converter={StaticResource TextToVisible}}" />
+                            </StackPanel>
+
+                            <!-- A source build or the plain zip, which offers the Releases page instead. -->
+                            <StackPanel Visibility="{Binding CannotUpdate, Converter={StaticResource BoolToVisible}}">
+                                <TextBlock Text="Updates" Style="{StaticResource Strong}" />
+                                <TextBlock Text="{Binding CurrentVersion}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                                <TextBlock Text="{Binding NotInstalledMessage}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                                <Button Content="Open Releases Page" Command="{Binding ReleasesPageCommand}" Margin="0,8,0,0" HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Grid>
+                    </DockPanel>
+                </Border>
+
+                <TextBlock Text="Foldcraft's own files" Style="{StaticResource SettingGroup}" />
+
+                <Border Style="{StaticResource SettingCard}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE8B7;" Style="{StaticResource SettingIcon}" />
+                        <Button DockPanel.Dock="Right" Content="Open Data Folder" Command="{Binding OpenDataFolderCommand}" Margin="16,0,0,0" VerticalAlignment="Center" />
+                        <TextBox Text="{Binding DataDirectory, Mode=OneWay}" IsReadOnly="True" VerticalAlignment="Center"
+                                 AutomationProperties.Name="Where Foldcraft keeps its own files" />
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE777;" Style="{StaticResource SettingIcon}" />
+                        <Button DockPanel.Dock="Right" Content="Remove All Changes..." Command="{Binding RemoveAllCommand}" Margin="16,0,0,0" VerticalAlignment="Center" />
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="Remove all Foldcraft changes" Style="{StaticResource Strong}" />
+                            <TextBlock Text="{Binding RemoveAllExplanation}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}"
+                        Visibility="{Binding Updates.CanUpdate, Converter={StaticResource BoolToVisible}}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE74D;" Style="{StaticResource SettingIcon}" VerticalAlignment="Top" Margin="0,2,0,0" />
+                        <StackPanel>
+                            <TextBlock Text="If you uninstall Foldcraft" Style="{StaticResource Strong}" />
+                            <TextBlock Text="{Binding UninstallExplanation}" Style="{StaticResource Caption}" Margin="0,2,0,0" />
+                        </StackPanel>
+                    </DockPanel>
+                </Border>
+
+                <Border Style="{StaticResource SettingCard}" Margin="0,8,0,0"
+                        Visibility="{Binding WhatRemains.Count, Converter={StaticResource CountToVisible}}">
+                    <StackPanel>
+                        <TextBlock Text="What happened and what's left" Style="{StaticResource Strong}" Margin="0,0,0,4" />
+                        <TextBlock Text="{Binding WhatRemainsText, NotifyOnTargetUpdated=True}" Style="{StaticResource Caption}" LineHeight="20"
+                                   views:LiveRegion.Announce="True"
+                                   AutomationProperties.LiveSetting="Polite" />
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,274 @@
+<UserControl x:Class="Foldcraft.App.Views.CustomizeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foldcraft.App.Views">
+    <UserControl.Resources>
+        <ResourceDictionary Source="/Foldcraft;component/Themes/PrimaryButton.xaml" />
+    </UserControl.Resources>
+
+    <Grid Margin="{StaticResource PageMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" MinWidth="200" />
+            <ColumnDefinition Width="{StaticResource ColumnGap}" />
+            <ColumnDefinition Width="308" />
+            <ColumnDefinition Width="{StaticResource ColumnGap}" />
+            <ColumnDefinition Width="212" />
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.ColumnSpan="5" Text="Customize" Style="{StaticResource PageTitle}" Margin="0,0,0,12" />
+
+        <!-- The folders -->
+        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="8">
+            <Grid Background="Transparent" views:FolderDrop.Command="{Binding DropCommand}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <DockPanel Margin="8,8,0,0">
+                    <Button DockPanel.Dock="Right" Content="&#xE894;" Style="{StaticResource IconButton}" Command="{Binding ClearCommand}"
+                            AutomationProperties.Name="Clear List"
+                            ToolTip="Empty this list. The folders themselves aren't changed." />
+                    <Button DockPanel.Dock="Right" Content="&#xE738;" Style="{StaticResource IconButton}" Command="{Binding RemoveSelectedCommand}"
+                            AutomationProperties.Name="Remove"
+                            ToolTip="Take the selected folders off this list. The folders themselves aren't changed." />
+                    <TextBlock Text="Folders" Style="{StaticResource SectionHeading}" VerticalAlignment="Center" />
+                </DockPanel>
+
+                <Button Grid.Row="1" Content="_Add Folders..." Command="{Binding AddFoldersCommand}" Margin="8,8,8,8"
+                        HorizontalAlignment="Stretch"
+                        ToolTip="Choose folders to customize (Ctrl+O)" />
+
+                <Grid Grid.Row="2">
+                    <ListBox ItemsSource="{Binding Folders}"
+                             SelectionMode="Extended"
+                             Background="Transparent" BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             VirtualizingPanel.IsVirtualizing="False"
+                             AutomationProperties.Name="Folders to customize">
+                        <ListBox.InputBindings>
+                            <KeyBinding Key="Delete" Command="{Binding RemoveSelectedCommand}" />
+                        </ListBox.InputBindings>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem" BasedOn="{StaticResource RowItem}">
+                                <Setter Property="IsSelected" Value="{Binding IsSelected, Mode=TwoWay}" />
+                                <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleText}" />
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}" Style="{StaticResource Strong}" />
+                                    <TextBlock Text="{Binding Path}" ToolTip="{Binding Path}"
+                                               Style="{StaticResource CaptionSingleLine}" />
+                                    <DockPanel Margin="0,2,0,0">
+                                        <TextBlock DockPanel.Dock="Left" Style="{StaticResource StatusSymbol}" />
+                                        <TextBlock Text="{Binding Status}" Style="{StaticResource StatusText}" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+
+                    <views:EmptyState Glyph="&#xE8B7;" Title="Drop folders here" Detail="or use Add Folders above" Margin="8"
+                                      Visibility="{Binding HasFolders, Converter={StaticResource BoolToCollapsed}}" />
+                </Grid>
+            </Grid>
+        </Border>
+
+        <!-- The designer -->
+        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource ScrollingCard}">
+            <ScrollViewer DataContext="{Binding Designer}"
+                          VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                          Focusable="False" Padding="0,0,12,0">
+                <StackPanel>
+                    <TextBlock Text="Design" Style="{StaticResource SectionHeading}" />
+
+                    <TextBlock Text="Folder style" Style="{StaticResource Label}" Margin="0,12,0,8" />
+
+                    <ComboBox ItemsSource="{Binding Shapes}" SelectedItem="{Binding SelectedShape}" DisplayMemberPath="Name"
+                              HorizontalAlignment="Stretch" AutomationProperties.Name="Folder style" />
+
+                    <TextBlock Text="Color" Style="{StaticResource Label}" />
+
+                    <ListBox ItemsSource="{Binding Swatches}" SelectedItem="{Binding SelectedSwatch}"
+                             Style="{StaticResource ChoiceList}" ItemContainerStyle="{StaticResource SwatchItem}"
+                             AutomationProperties.Name="Color palette" />
+
+                    <Grid Margin="0,6,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="32" Height="32" CornerRadius="{StaticResource ControlRadius}" BorderThickness="1" Margin="0,0,8,0"
+                                Background="{Binding ActiveHex, Converter={StaticResource HexToBrush}}"
+                                BorderBrush="{DynamicResource ControlStrokeColorSecondaryBrush}" />
+                        <TextBox Grid.Column="1" Text="{Binding HexText, UpdateSourceTrigger=PropertyChanged}"
+                                 MaxLength="9" AutomationProperties.Name="Custom color as six digits"
+                                 ToolTip="Type any color, like #2F6FED" />
+                    </Grid>
+
+                    <TextBlock Text="{Binding HexMessage}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                               Visibility="{Binding HexMessage, Converter={StaticResource TextToVisible}}" />
+
+                    <CheckBox Content="Use a gradient" IsChecked="{Binding IsGradient}" Margin="0,8,0,0" />
+
+                    <StackPanel Visibility="{Binding IsGradient, Converter={StaticResource BoolToVisible}}">
+                        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+                            <RadioButton Content="First color" IsChecked="{Binding EditingStart}" GroupName="GradientStop" Margin="0,0,12,0"
+                                         ToolTip="The palette above sets the gradient's first color" />
+                            <RadioButton Content="Second color" IsChecked="{Binding EditingEnd}" GroupName="GradientStop"
+                                         ToolTip="The palette above sets the gradient's second color" />
+                        </StackPanel>
+                        <DockPanel Margin="0,4,0,0">
+                            <TextBlock DockPanel.Dock="Right" Text="{Binding AngleText}" Style="{StaticResource Caption}"
+                                       Width="36" TextAlignment="Right" VerticalAlignment="Center" />
+                            <TextBlock DockPanel.Dock="Left" Text="Direction" Style="{StaticResource Caption}"
+                                       VerticalAlignment="Center" Margin="0,0,8,0" />
+                            <Slider Minimum="0" Maximum="345" TickFrequency="15" IsSnapToTickEnabled="True"
+                                    SmallChange="15" LargeChange="45" Value="{Binding Angle}"
+                                    AutomationProperties.Name="Gradient direction in degrees" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <TextBlock Text="Badge" Style="{StaticResource Label}" />
+
+                    <ListBox ItemsSource="{Binding Badges}" SelectedItem="{Binding SelectedBadge}"
+                             Style="{StaticResource ChoiceList}" ItemContainerStyle="{StaticResource GlyphItem}"
+                             AutomationProperties.Name="Corner badges" />
+
+                    <StackPanel Visibility="{Binding HasBadge, Converter={StaticResource BoolToVisible}}">
+                        <Grid Margin="0,6,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Corner" Style="{StaticResource Caption}" Margin="0,0,0,4" />
+                            <TextBlock Grid.Column="2" Text="Color (optional)" Style="{StaticResource Caption}" Margin="0,0,0,4" />
+                            <ComboBox Grid.Row="1" ItemsSource="{Binding Corners}" SelectedItem="{Binding SelectedCorner}" DisplayMemberPath="Name"
+                                      HorizontalAlignment="Stretch" AutomationProperties.Name="Badge corner" />
+                            <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding BadgeHexText, UpdateSourceTrigger=PropertyChanged}" MaxLength="9"
+                                     AutomationProperties.Name="Badge color as six digits"
+                                     ToolTip="Leave this empty to use the badge's own color, or type one like #16A34A" />
+                        </Grid>
+                        <TextBlock Text="{Binding BadgeHexMessage}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                                   Visibility="{Binding BadgeHexMessage, Converter={StaticResource TextToVisible}}" />
+                    </StackPanel>
+
+                    <TextBlock Text="Symbol" Style="{StaticResource Label}" />
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <TextBlock Text="Search" Style="{StaticResource Caption}" Margin="0,0,0,4" />
+                        <TextBlock Grid.Column="2" Text="Category" Style="{StaticResource Caption}" Margin="0,0,0,4" />
+                        <TextBox Grid.Row="1" Text="{Binding GlyphSearch, UpdateSourceTrigger=PropertyChanged}"
+                                 AutomationProperties.Name="Search symbols"
+                                 ToolTip="Search symbols, like music or travel" />
+                        <ComboBox Grid.Row="1" Grid.Column="2" ItemsSource="{Binding GlyphCategories}" SelectedItem="{Binding SelectedCategory}"
+                                  HorizontalAlignment="Stretch" DisplayMemberPath="Name" AutomationProperties.Name="Symbol category" />
+                    </Grid>
+
+                    <TextBlock Text="No symbols match that search." Style="{StaticResource Caption}" Margin="0,8,0,0"
+                               Visibility="{Binding NoGlyphsFound, Converter={StaticResource BoolToVisible}}" />
+
+                    <ListBox ItemsSource="{Binding VisibleGlyphs}" SelectedItem="{Binding SelectedGlyph}" Margin="0,8,0,0"
+                             Style="{StaticResource ChoiceList}" ItemContainerStyle="{StaticResource GlyphItem}"
+                             AutomationProperties.Name="Folder symbols" />
+
+                    <TextBlock Text="Or use an emoji" Style="{StaticResource Caption}" Margin="0,8,0,4" />
+                    <TextBox Text="{Binding EmojiText, UpdateSourceTrigger=PropertyChanged}" MaxLength="32"
+                             AutomationProperties.Name="An emoji to use as the symbol"
+                             ToolTip="Paste one emoji, or press Win + . to pick one" />
+                    <TextBlock Text="{Binding EmojiMessage}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                               Visibility="{Binding EmojiMessage, Converter={StaticResource TextToVisible}}" />
+
+                    <DockPanel Margin="0,8,0,4">
+                        <Button DockPanel.Dock="Left" Content="Use My Own Picture..." Command="{Binding PickImageCommand}" />
+                        <Button DockPanel.Dock="Right" Content="Remove" Command="{Binding ClearImageCommand}" Margin="8,0,0,0"
+                                AutomationProperties.Name="Remove picture"
+                                Visibility="{Binding HasImage, Converter={StaticResource BoolToVisible}}" />
+                        <TextBlock />
+                    </DockPanel>
+
+                    <TextBlock Text="{Binding ImageName}" ToolTip="{Binding ImageName}" Style="{StaticResource CaptionSingleLine}"
+                               Visibility="{Binding ImageName, Converter={StaticResource TextToVisible}}" />
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- The result -->
+        <Border Grid.Row="1" Grid.Column="4" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <ScrollViewer DataContext="{Binding Designer}" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False">
+                    <StackPanel>
+                        <TextBlock Text="Preview" Style="{StaticResource SectionHeading}" />
+
+                        <Image Width="164" Height="164" Margin="0,4,0,0" HorizontalAlignment="Center"
+                               Source="{Binding LargePreview, Converter={StaticResource PngToImage}}"
+                               RenderOptions.BitmapScalingMode="HighQuality"
+                               AutomationProperties.Name="Large preview of the folder" />
+
+                        <Border Style="{StaticResource Stage}" Padding="0,8">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="36" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <views:PixelExactImage HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Source="{Binding MediumPreview, Converter={StaticResource PngToImage}}"
+                                                       AutomationProperties.Name="Preview at 32 pixels" />
+                                <views:PixelExactImage Grid.Column="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Source="{Binding SmallPreview, Converter={StaticResource PngToImage}}"
+                                                       AutomationProperties.Name="Preview at 16 pixels" />
+                                <TextBlock Grid.Row="1" Text="32 px" Style="{StaticResource Caption}" TextAlignment="Center" />
+                                <TextBlock Grid.Row="1" Grid.Column="1" Text="16 px" Style="{StaticResource Caption}" TextAlignment="Center" />
+                            </Grid>
+                        </Border>
+
+                        <TextBlock Text="{Binding PreviewError, NotifyOnTargetUpdated=True}" Style="{StaticResource Caption}" Margin="0,8,0,0"
+                                   Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                                   views:LiveRegion.Announce="True"
+                                   AutomationProperties.LiveSetting="Assertive"
+                                   Visibility="{Binding PreviewError, Converter={StaticResource TextToVisible}}" />
+                    </StackPanel>
+                </ScrollViewer>
+
+                <StackPanel Grid.Row="1" Margin="0,12,0,0">
+                    <Button Content="{Binding ApplyLabel}" Command="{Binding ApplyCommand}"
+                            Style="{StaticResource PrimaryButton}"
+                            HorizontalAlignment="Stretch" Padding="12,8" FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding ApplyHint}" Style="{StaticResource Caption}" Margin="0,8,0,0" TextAlignment="Center"
+                               Visibility="{Binding ApplyHint, Converter={StaticResource TextToVisible}}" />
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

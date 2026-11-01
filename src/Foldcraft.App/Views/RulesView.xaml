@@ -1,0 +1,138 @@
+<UserControl x:Class="Foldcraft.App.Views.RulesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:Foldcraft.App.Views">
+    <UserControl.Resources>
+        <ResourceDictionary Source="/Foldcraft;component/Themes/PrimaryButton.xaml" />
+    </UserControl.Resources>
+
+    <Grid Margin="{StaticResource PageMargin}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="320" />
+            <ColumnDefinition Width="{StaticResource ColumnGap}" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Grid.ColumnSpan="3" Margin="0,0,0,12">
+            <TextBlock Text="Rules" Style="{StaticResource PageTitle}" />
+            <TextBlock Style="{StaticResource Caption}"
+                       Text="Rules only run when you press Preview and then Apply. Nothing runs in the background." />
+        </StackPanel>
+
+        <!-- The rules -->
+        <Border Grid.Row="1" Style="{StaticResource ScrollingCard}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" Padding="0,0,12,0">
+                <StackPanel>
+                    <TextBlock Text="New rule" Style="{StaticResource SectionHeading}" />
+
+                    <TextBlock Text="If a folder..." Style="{StaticResource Label}" Margin="0,12,0,8" />
+                    <ComboBox ItemsSource="{Binding Conditions}" SelectedItem="{Binding SelectedCondition}" DisplayMemberPath="Name"
+                              HorizontalAlignment="Stretch" AutomationProperties.Name="What the rule looks at" />
+
+                    <TextBox Text="{Binding PatternText, UpdateSourceTrigger=PropertyChanged}" Margin="0,8,0,0" MaxLength="100"
+                             AutomationProperties.Name="What the rule looks for" />
+                    <TextBlock Text="{Binding PatternHint}" Style="{StaticResource Caption}" Margin="0,4,0,0" />
+                    <TextBlock Text="{Binding PatternMessage}" Style="{StaticResource Caption}" Margin="0,4,0,0"
+                               Foreground="{DynamicResource SystemFillColorCriticalBrush}"
+                               Visibility="{Binding PatternMessage, Converter={StaticResource TextToVisible}}" />
+
+                    <TextBlock Text="use this look" Style="{StaticResource Label}" />
+                    <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" DisplayMemberPath="Name"
+                              HorizontalAlignment="Stretch" AutomationProperties.Name="The look this rule uses" />
+
+                    <Button Content="Add Rule" Command="{Binding AddRuleCommand}" Margin="0,12,0,0" HorizontalAlignment="Left" />
+
+                    <TextBlock Text="Your rules" Style="{StaticResource Label}" Margin="0,24,0,0" />
+                    <TextBlock Style="{StaticResource Caption}" Margin="0,4,0,0" Text="The first rule that fits a folder wins." />
+
+                    <Border Style="{StaticResource NoteCard}" Margin="0,8,0,0"
+                            Visibility="{Binding Notice, Converter={StaticResource TextToVisible}}">
+                        <TextBlock Text="{Binding Notice}" Style="{StaticResource Caption}" />
+                    </Border>
+
+                    <ItemsControl ItemsSource="{Binding Rules}" Focusable="False" Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <DockPanel Margin="0,2">
+                                    <Button DockPanel.Dock="Right" Content="Remove" Command="{Binding RemoveCommand}" Margin="8,0,0,0"
+                                            AutomationProperties.Name="{Binding RemoveName}" />
+                                    <TextBlock Text="{Binding Summary}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                                </DockPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- The preview -->
+        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource Card}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Where to look" Style="{StaticResource SectionHeading}" />
+
+                <DockPanel Grid.Row="1" Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Content="Choose Folder..." Command="{Binding PickScopeCommand}" Margin="8,0,0,0" />
+                    <TextBlock Text="{Binding ScopeLabel}" ToolTip="{Binding ScopeLabel}" Style="{StaticResource CaptionSingleLine}"
+                               VerticalAlignment="Center" />
+                </DockPanel>
+
+                <DockPanel Grid.Row="2" Margin="0,8,0,0">
+                    <Button DockPanel.Dock="Right" Content="Preview" Command="{Binding PreviewCommand}" Margin="8,0,0,0"
+                            ToolTip="See what the rules would do. Nothing changes yet." />
+                    <TextBlock Text="Levels of subfolders" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,8,0" />
+                    <ComboBox ItemsSource="{Binding DepthChoices}" SelectedItem="{Binding Depth}" HorizontalAlignment="Left" MinWidth="72"
+                              AutomationProperties.Name="Levels of subfolders to look through" />
+                </DockPanel>
+
+                <Border Grid.Row="3" Style="{StaticResource Stage}" Padding="4" Margin="0,12,0,0">
+                    <Grid>
+                        <ListBox ItemsSource="{Binding PreviewRows}" Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 AutomationProperties.Name="What the rules would do">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem" BasedOn="{StaticResource RowItem}">
+                                    <Setter Property="AutomationProperties.Name" Value="{Binding Path}" />
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <DockPanel>
+                                        <CheckBox DockPanel.Dock="Left" IsChecked="{Binding IsIncluded}" MinWidth="0" Margin="0,0,8,0"
+                                                  Visibility="{Binding CanInclude, Converter={StaticResource BoolToVisible}}"
+                                                  AutomationProperties.Name="{Binding Path}" />
+                                        <TextBlock DockPanel.Dock="Left" Style="{StaticResource StatusSymbol}" />
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding Name}" ToolTip="{Binding Path}" Style="{StaticResource Strong}" />
+                                            <TextBlock Text="{Binding Message}" Style="{StaticResource StatusText}" />
+                                        </StackPanel>
+                                    </DockPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <views:EmptyState Glyph="&#xE721;" Title="Nothing to show yet" Detail="Choose a folder and press Preview to see what would change."
+                                          Visibility="{Binding HasPreview, Converter={StaticResource BoolToCollapsed}}" />
+                    </Grid>
+                </Border>
+
+                <DockPanel Grid.Row="4" Margin="0,12,0,0">
+                    <Button DockPanel.Dock="Right" Content="Apply Checked Folders" Command="{Binding ApplyCommand}"
+                            Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" />
+                    <TextBlock Text="{Binding PreviewSummary}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                </DockPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

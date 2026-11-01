@@ -1,0 +1,40 @@
+<Project>
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!--
+    Each project's packages.lock.json pins its packages by hash, and GitHub Actions refuses a
+    restore that doesn't match. The runtime is listed so a release publish restores the same graph.
+  -->
+  <PropertyGroup>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <!-- What every build says about itself. The version is set here and nowhere else. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+    <Product>Foldcraft</Product>
+    <Company>28Y8</Company>
+    <Authors>28Y8</Authors>
+    <Copyright>Copyright (c) 2026 28Y8</Copyright>
+    <Description>Changes how Windows 11 folders look. Every change is recorded and can be undone.</Description>
+    <RepositoryUrl>https://github.com/28Y8/Foldcraft</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/28Y8/Foldcraft</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+
+    <!--
+      The installer's id, and the folder it installs to under %LOCALAPPDATA%. Uninstalling empties
+      that folder, so this can never be "Foldcraft", which is the data folder. ReleaseSite.PackageId
+      holds the same value, and a test keeps the two together.
+    -->
+    <FoldcraftPackageId>FoldcraftApp</FoldcraftPackageId>
+  </PropertyGroup>
+</Project>
