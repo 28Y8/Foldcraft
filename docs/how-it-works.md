@@ -103,13 +103,16 @@ Every file is checked strictly when it's imported, and a file that breaks any ru
 | Epic Games | The launcher's manifests in ProgramData |
 | Start Menu | Shortcuts for your account and all users, leaving out uninstallers, documentation and parts of Windows |
 
+A scan also adds an item for each well-known company it finds software from: Adobe, Autodesk, Corel, Google, JetBrains and Microsoft. Its icon comes from one of that company's apps on your PC, such as Adobe Creative Cloud or Google Chrome, and its shortcut starts that app. Foldcraft ships no logos, so a company with nothing installed has no item, and the folder shows that app's icon and not the company's logo. To use a logo of your own, choose **Use My Own Picture...** on the Customize screen.
+
 Each app's icon is read from the software on your PC, and the folder's colors are picked from it. If the icon would disappear against the folder, Foldcraft shifts the folder's color or puts a subtle plate behind the icon. A small icon is drawn smaller to stay sharp, and you're told. Pictures stay in memory until you press the button that makes folders.
 
-Pressing that button records and then makes each folder, with its shortcut inside. The whole run undoes as one step.
+Applying a look to folders you already have is the main action on this screen. To make new ones instead, open **Make new folders instead**. Pressing the button there records and then makes each folder, with its shortcut inside. The whole run undoes as one step.
 
 - If a name is taken, Foldcraft skips that item or adds a number, as you prefer. Names Windows doesn't allow are fixed first.
 - Roblox and some Windows Installer apps start through their own Start Menu shortcut, because their program moves. If you uninstall the app or remove that shortcut, the shortcut in your folder stops working.
-- **Use on a Folder...** gives a folder you already have the same look, such as a game library on another drive.
+- **Apply to a Folder...** gives a folder you already have the same look, such as a game library on another drive, and makes nothing new.
+- **Apply to All Folders Inside...** does the same for every folder directly inside the one you choose, such as each version of an app. It leaves out hidden folders, system folders and links, lists what it found and asks first. The whole run undoes as one step. Each folder goes through the safety checks, so one that's refused is reported and the rest carry on. Folders in AppData stay refused, and folders in Program Files need Foldcraft restarted as administrator.
 - Changing a game's own install folder is off until you turn it on, because a game update can undo it. Protected places stay blocked, so many games are skipped.
 
 ## The right-click menu
@@ -157,6 +160,7 @@ Automatic install on the next start, which Velopack does by default, is turned o
 | --- | --- |
 | `--customize "<folder>"` | Adds a folder to the list. If Foldcraft is already open, the folder joins that window. Nothing changes until you press Apply |
 | `--data-dir "<folder>"` | Uses another data folder, which is handy for trying the app without touching your real one |
+| `--replaces <process id>` | Waits up to 5 seconds for that copy to close. **Restart as Administrator** uses this |
 
 ## Known limitations
 
@@ -169,6 +173,10 @@ Automatic install on the next start, which Velopack does by default, is turned o
 - A customized folder shows the look only on PCs that have its icon, so another PC syncing the same folder shows a plain folder.
 - Folders in OneDrive or another cloud service can be customized, but this hasn't been tried on a real synced folder yet. They're treated like any other folder: Foldcraft reads and changes the settings file and the folder's date and lists names when it cleans up after itself. It never opens your other files, so it can't cause them to download, though a settings file that's only online may download when it's read. Windows itself may still read files when it draws a preview, as it does for any folder.
 - If you rename or move a customized folder, Foldcraft can't follow it on its own. **Find Folder** lets you show it the new location.
+- Installers often lock their folders so only administrators can write to them, wherever they are. Foldcraft can't change such a folder until you restart it as administrator from Settings, and it says so. Undoing that change takes administrator rights too.
+- While Foldcraft runs as administrator, Windows blocks dragging folders in from File Explorer, and folders can be added with the button instead. The right-click entry and the Start Menu can't reach that window either, so each opens a separate normal one.
+- If a normal copy runs within about 75 seconds of an undo made as administrator, the later date step for that folder is dropped, and a folder in Program Files that needed it stays plain until its date changes.
+- **Repair Icons** in a normal copy skips folders changed as administrator, and the reason it gives doesn't mention that.
 - Windows doesn't show a custom look for a folder whose path is about 248 characters or longer. Foldcraft warns you.
 - Folder names that end in a dot or a space are refused, because Windows would treat them as a different folder's name.
 - On Windows 11 the right-click entry appears under **Show more options**, not in the first short menu.

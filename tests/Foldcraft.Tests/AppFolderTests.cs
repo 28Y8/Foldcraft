@@ -1130,6 +1130,54 @@ public sealed class AppFolderCreatorTests : IDisposable
     }
 
     [Fact]
+    public void Many_existing_folders_take_one_look_and_undo_as_one_step()
+    {
+        var versions = new[] { _box.NewFolder("Version 1"), _box.NewFolder("Version 2"), _box.NewFolder("Version 3") };
+
+        var results = Creator().ThemeExisting(SampleApps.Request(SampleApps.Program()), versions);
+
+        Assert.All(results, result => Assert.Equal(AppFolderOutcome.Themed, result.Outcome));
+        Assert.All(versions, folder => Assert.True(File.Exists(Sandbox.IniPath(folder))));
+
+        _box.Restorer().UndoLast();
+
+        Assert.All(versions, folder => Assert.False(File.Exists(Sandbox.IniPath(folder))));
+    }
+
+    [Fact]
+    public void A_refused_folder_does_not_stop_the_rest_of_the_run()
+    {
+        var version = _box.NewFolder("Version 1");
+        var protectedFolder = Path.Combine(_box.FakeAppData, "Launcher");
+        Directory.CreateDirectory(protectedFolder);
+
+        var results = Creator().ThemeExisting(SampleApps.Request(SampleApps.Program()), [protectedFolder, version]);
+
+        Assert.Equal(AppFolderOutcome.Refused, results[0].Outcome);
+        Assert.Equal(AppFolderOutcome.Themed, results[1].Outcome);
+    }
+
+    [Fact]
+    public void The_folders_inside_one_leave_out_files_and_hidden_folders()
+    {
+        var parent = _box.NewFolder("App");
+        var second = Directory.CreateDirectory(Path.Combine(parent, "2.0")).FullName;
+        var first = Directory.CreateDirectory(Path.Combine(parent, "1.0")).FullName;
+        var hidden = Directory.CreateDirectory(Path.Combine(parent, "cache")).FullName;
+
+        File.SetAttributes(hidden, File.GetAttributes(hidden) | FileAttributes.Hidden);
+        File.WriteAllText(Path.Combine(parent, "notes.txt"), "text");
+
+        Assert.Equal([first, second], AppFolderCreator.FoldersInside(parent));
+    }
+
+    [Fact]
+    public void A_folder_that_is_gone_has_nothing_inside_it()
+    {
+        Assert.Empty(AppFolderCreator.FoldersInside(Path.Combine(_box.Root, "gone")));
+    }
+
+    [Fact]
     public void An_install_folder_is_left_alone_unless_asked_for()
     {
         var install = _box.NewFolder("Install");

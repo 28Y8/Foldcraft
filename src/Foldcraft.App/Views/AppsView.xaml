@@ -24,12 +24,6 @@
         </DockPanel>
 
         <DockPanel Grid.Row="1" Margin="0,12,0,0">
-            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                <TextBlock Text="{Binding IncludedLabel}" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="12,0,12,0" />
-                <Button Content="Select All" Command="{Binding SelectAllCommand}" Margin="0,0,8,0"
-                        ToolTip="Check everything showing right now" />
-                <Button Content="Select None" Command="{Binding SelectNoneCommand}" />
-            </StackPanel>
             <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding Sources}" SelectedItem="{Binding SelectedSource}" MinWidth="130"
                       Margin="8,0,0,0" AutomationProperties.Name="Filter by where it was found" />
             <TextBlock DockPanel.Dock="Left" Text="Search" Style="{StaticResource Caption}" VerticalAlignment="Center" Margin="0,0,8,0" />
@@ -181,48 +175,59 @@
                                           HorizontalAlignment="Stretch" AutomationProperties.Name="Plate behind the logo" />
                             </StackPanel>
 
-                            <WrapPanel Margin="0,12,0,0">
-                                <Button Content="Reset" Command="{Binding ResetCommand}" Margin="0,0,8,0"
-                                        ToolTip="Go back to the colors and layout Foldcraft chose" />
-                                <Button Content="Use on a Folder..."
-                                        Command="{Binding DataContext.ThemeExistingCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        ToolTip="Give a folder you already have this look, such as a game library on another drive. You can undo this from History." />
-                            </WrapPanel>
+                            <Button Content="Reset" Command="{Binding ResetCommand}" Margin="0,12,0,0" HorizontalAlignment="Left"
+                                    ToolTip="Go back to the colors and layout Foldcraft chose" />
                         </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </Border>
         </Grid>
 
-        <!-- Where the folders go, the install folder choice and the button -->
+        <!-- Giving a folder the look, which is the usual job, and making new folders behind it -->
         <Border Grid.Row="3" Style="{StaticResource NoteCard}" Margin="0,12,0,0">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
-
+            <StackPanel>
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Choose Location..." Command="{Binding PickDestinationCommand}" Margin="8,0,0,0" />
-                    <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding ClashChoices}" SelectedItem="{Binding SelectedClash}"
-                              DisplayMemberPath="Name" Margin="8,0,0,0" MinWidth="200"
-                              AutomationProperties.Name="If a name is already taken" ToolTip="What to do if a name is already taken" />
-                    <TextBlock Text="{Binding DestinationLabel}" ToolTip="{Binding DestinationLabel}" Style="{StaticResource CaptionSingleLine}"
-                               VerticalAlignment="Center" />
+                    <Button DockPanel.Dock="Right" Content="Apply to a Folder..." Command="{Binding ThemeExistingCommand}"
+                            Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" VerticalAlignment="Center"
+                            ToolTip="Give a folder you already have this look. Nothing new is made, and you can undo this from History." />
+                    <Button DockPanel.Dock="Right" Content="Apply to All Folders Inside..." Command="{Binding ThemeFoldersInsideCommand}"
+                            Margin="8,0,0,0" VerticalAlignment="Center"
+                            ToolTip="Choose a folder and give every folder directly inside it this look, such as each version of an app. You can undo all of it as one step from History." />
+                    <TextBlock Text="{Binding ApplyHint}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
                 </DockPanel>
 
-                <DockPanel Grid.Row="1" Margin="0,8,0,0">
-                    <Button DockPanel.Dock="Right" Content="{Binding CreateLabel}" Command="{Binding CreateCommand}"
-                            Style="{StaticResource PrimaryButton}" Margin="8,0,0,0" VerticalAlignment="Top"
-                            ToolTip="Make a folder for each checked item, holding a shortcut that starts it. You can undo this from History." />
-                    <StackPanel>
-                        <CheckBox Content="Also change each game's own install folder" IsChecked="{Binding ThemeInstallFolders}"
-                                  ToolTip="{Binding InstallFolderExplanation}" />
-                        <TextBlock Text="{Binding InstallFolderExplanation}" Style="{StaticResource Caption}" Margin="0,2,0,0"
-                                   Visibility="{Binding ThemeInstallFolders, Converter={StaticResource BoolToVisible}}" />
+                <Expander Header="Make new folders instead" Margin="0,8,0,0">
+                    <StackPanel Margin="0,8,0,0">
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Select None" Command="{Binding SelectNoneCommand}" Margin="8,0,0,0" />
+                            <Button DockPanel.Dock="Right" Content="Select All" Command="{Binding SelectAllCommand}" Margin="8,0,0,0"
+                                    ToolTip="Check everything showing right now" />
+                            <TextBlock Text="{Binding IncludedLabel}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <DockPanel Margin="0,8,0,0">
+                            <Button DockPanel.Dock="Right" Content="Choose Location..." Command="{Binding PickDestinationCommand}" Margin="8,0,0,0" />
+                            <ComboBox DockPanel.Dock="Right" ItemsSource="{Binding ClashChoices}" SelectedItem="{Binding SelectedClash}"
+                                      DisplayMemberPath="Name" Margin="8,0,0,0" MinWidth="200"
+                                      AutomationProperties.Name="If a name is already taken" ToolTip="What to do if a name is already taken" />
+                            <TextBlock Text="{Binding DestinationLabel}" ToolTip="{Binding DestinationLabel}" Style="{StaticResource CaptionSingleLine}"
+                                       VerticalAlignment="Center" />
+                        </DockPanel>
+
+                        <DockPanel Margin="0,8,0,0">
+                            <Button DockPanel.Dock="Right" Content="{Binding CreateLabel}" Command="{Binding CreateCommand}"
+                                    Margin="8,0,0,0" VerticalAlignment="Top"
+                                    ToolTip="Make a folder for each checked item, holding a shortcut that starts it. You can undo this from History." />
+                            <StackPanel>
+                                <CheckBox Content="Also change each game's own install folder" IsChecked="{Binding ThemeInstallFolders}"
+                                          ToolTip="{Binding InstallFolderExplanation}" />
+                                <TextBlock Text="{Binding InstallFolderExplanation}" Style="{StaticResource Caption}" Margin="0,2,0,0"
+                                           Visibility="{Binding ThemeInstallFolders, Converter={StaticResource BoolToVisible}}" />
+                            </StackPanel>
+                        </DockPanel>
                     </StackPanel>
-                </DockPanel>
-            </Grid>
+                </Expander>
+            </StackPanel>
         </Border>
 
         <StackPanel Grid.Row="4" Margin="0,8,0,0">

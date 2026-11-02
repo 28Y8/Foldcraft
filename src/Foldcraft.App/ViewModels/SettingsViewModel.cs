@@ -54,6 +54,7 @@ public sealed class SettingsViewModel : ObservableObject
         UpdateRightClickCommand = new RelayCommand(UpdateRightClick, () => CanChangeRightClick && RightClickIsOutdated && !_activity.IsBusy);
         OpenDataFolderCommand = new RelayCommand(OpenDataFolder);
         RemoveAllCommand = new AsyncRelayCommand(RemoveAllAsync, onError, () => !_activity.IsBusy);
+        RestartAsAdministratorCommand = new RelayCommand(RestartAsAdministrator, () => !IsRunningAsAdministrator && !_activity.IsBusy);
 
         _rightClickMessage = RightClickIsOutdated ? PlainEnglish.RightClickMoved : null;
 
@@ -74,6 +75,7 @@ public sealed class SettingsViewModel : ObservableObject
             ToggleRightClickCommand.RaiseCanExecuteChanged();
             UpdateRightClickCommand.RaiseCanExecuteChanged();
             RemoveAllCommand.RaiseCanExecuteChanged();
+            RestartAsAdministratorCommand.RaiseCanExecuteChanged();
         };
     }
 
@@ -96,6 +98,17 @@ public sealed class SettingsViewModel : ObservableObject
     public RelayCommand OpenDataFolderCommand { get; }
 
     public AsyncRelayCommand RemoveAllCommand { get; }
+
+    /// <summary>Closes this copy and starts one with administrator rights, if the person agrees.</summary>
+    public RelayCommand RestartAsAdministratorCommand { get; }
+
+    public bool IsRunningAsAdministrator => _services.Elevation.IsElevated;
+
+    public string AdministratorExplanation => IsRunningAsAdministrator
+        ? "Foldcraft is running as administrator, so it can change folders inside Program Files and ProgramData. " +
+          "Windows doesn't let you drag folders in from File Explorer while it runs this way."
+        : "Foldcraft doesn't require administrator rights. Restart with them to change folders inside Program Files " +
+          "and ProgramData, or to undo such a change.";
 
     public UpdatesViewModel Updates { get; }
 
@@ -282,6 +295,27 @@ public sealed class SettingsViewModel : ObservableObject
 
     private void LogRightClick(RightClickResult result) =>
         _services.Log.Write($"Right-click entry: {result.Outcome}. {result.Message}");
+
+    private void RestartAsAdministrator()
+    {
+        if (!_dialogs.Confirm(
+                "Restart as administrator?",
+                "Foldcraft closes and opens again with administrator rights, after Windows asks you to agree. Folders in your list that you haven't applied a look to will need adding again.",
+                "Restart"))
+        {
+            return;
+        }
+
+        try
+        {
+            _services.Elevation.TryRestartElevated(_services.CustomDataDirectory);
+        }
+        catch (System.ComponentModel.Win32Exception ex)
+        {
+            _services.Log.Write("Restarting as administrator failed", ex);
+            _dialogs.ShowError("Windows didn't let Foldcraft restart as administrator, so it's carrying on as it was.");
+        }
+    }
 
     private void OpenDataFolder()
     {

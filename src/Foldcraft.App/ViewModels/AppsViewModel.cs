@@ -61,6 +61,7 @@ public sealed class AppsViewModel : ObservableObject
         PickDestinationCommand = new RelayCommand(PickDestination, () => !_activity.IsBusy);
         CreateCommand = new AsyncRelayCommand(CreateAsync, onError, () => !_activity.IsBusy && IncludedCount > 0);
         ThemeExistingCommand = new AsyncRelayCommand(ThemeExistingAsync, onError, () => !_activity.IsBusy && SelectedTile is { IsReady: true });
+        ThemeFoldersInsideCommand = new AsyncRelayCommand(ThemeFoldersInsideAsync, onError, () => !_activity.IsBusy && SelectedTile is { IsReady: true });
         DismissResultsCommand = new RelayCommand(Results.Clear);
 
         _activity.BusyChanged += (_, _) => RefreshCommands();
@@ -98,13 +99,19 @@ public sealed class AppsViewModel : ObservableObject
     /// <summary>Gives the selected item's look to a folder that already exists.</summary>
     public AsyncRelayCommand ThemeExistingCommand { get; }
 
+    /// <summary>Gives the selected item's look to every folder inside one, such as each version of an app.</summary>
+    public AsyncRelayCommand ThemeFoldersInsideCommand { get; }
+
     public RelayCommand DismissResultsCommand { get; }
 
     public string Disclaimer => PlainEnglish.AppsDisclaimer;
 
     public string InstallFolderExplanation =>
         "Off unless you turn it on. Foldcraft normally leaves a game's own folder alone. This adds a small hidden settings file " +
-        "inside it, which a game update or a file check can remove. Program Files and AppData stay blocked, so many games will be skipped.";
+        "inside it, which a game update or a file check can remove. " +
+        (_services.Elevation.IsElevated
+            ? "Foldcraft is running as administrator, so folders in Program Files can change. AppData stays blocked, so some games will be skipped."
+            : "Program Files and AppData stay blocked, so many games will be skipped. Restarting as administrator from Settings opens up Program Files.");
 
     public AppTileViewModel? SelectedTile
     {
@@ -114,9 +121,17 @@ public sealed class AppsViewModel : ObservableObject
             if (Set(ref _selectedTile, value))
             {
                 ThemeExistingCommand.RaiseCanExecuteChanged();
+                ThemeFoldersInsideCommand.RaiseCanExecuteChanged();
+                OnPropertyChanged(nameof(ApplyHint));
             }
         }
     }
+
+    /// <summary>The next step, beside the buttons that apply a look.</summary>
+    public string ApplyHint =>
+        SelectedTile is { } tile ? $"Give a folder you already have the {tile.Name} look."
+        : HasScanned ? "Click an app to choose its look."
+        : "Press Scan, click an app and give any of your folders its look.";
 
     public string SearchText
     {
@@ -197,6 +212,7 @@ public sealed class AppsViewModel : ObservableObject
             if (Set(ref _hasScanned, value))
             {
                 OnPropertyChanged(nameof(EmptyMessage));
+                OnPropertyChanged(nameof(ApplyHint));
             }
         }
     }
@@ -419,6 +435,79 @@ public sealed class AppsViewModel : ObservableObject
         }
     }
 
+    /// <summary>Everything goes through one question and one undo step, however many folders there are.</summary>
+    private async Task ThemeFoldersInsideAsync()
+    {
+        if (SelectedTile is not { } tile ||
+            _dialogs.PickFolder($"Choose the folder that holds the folders to give the {tile.Name} look") is not { } parent)
+        {
+            return;
+        }
+
+        var folders = await Task.Run(() => AppFolderCreator.FoldersInside(parent), CancellationToken.None);
+
+        // A slow drive leaves time to start something else, and only one job can run.
+        if (_activity.IsBusy)
+        {
+            Summary = "Foldcraft is busy, so nothing changed. Try again when the current work finishes.";
+            return;
+        }
+
+        if (folders.Count == 0)
+        {
+            Summary = "That folder has no folders inside it for Foldcraft to change.";
+            return;
+        }
+
+        if (!_dialogs.Confirm(
+                $"Change {PlainEnglish.Folders(folders.Count)}?",
+                $"Each folder directly inside {parent} gets the {tile.Name} look. Your files aren't touched, and you can undo all of it as one step from History.",
+                "Apply",
+                folders.Select(folder => Path.GetFileName(folder)).ToArray()))
+        {
+            return;
+        }
+
+        var cancellation = _activity.Begin($"Applying the {tile.Name} look...", folders.Count, cancellable: true);
+        var summary = "Something went wrong, and the remaining folders were left alone.";
+        var finished = false;
+        var progress = new Progress<FolderApplyResult>(_ =>
+        {
+            if (!finished)
+            {
+                _activity.Advance();
+            }
+        });
+
+        Results.Clear();
+
+        try
+        {
+            var request = tile.ToRequest();
+            var results = await Task.Run(() => _services.AppFolders.ThemeExisting(request, folders, cancellation, progress), CancellationToken.None);
+            finished = true;
+
+            for (var i = 0; i < results.Count; i++)
+            {
+                if (results[i].Outcome == AppFolderOutcome.Failed)
+                {
+                    _services.Log.Write($"The look for {tile.Name} failed on a folder: {results[i].Message}");
+                }
+
+                Results.Add(new AppResultRow(Path.GetFileName(folders[i]), PlainEnglish.AppFolderResult(results[i]), KindOf(results[i])));
+            }
+
+            summary = PlainEnglish.ThemedFoldersSummary(results);
+            tile.ShowResult(summary, results.All(result => result.Outcome == AppFolderOutcome.Themed) ? StatusKind.Success : StatusKind.Warning);
+            Summary = summary;
+        }
+        finally
+        {
+            _activity.Finish(summary);
+            Applied?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     private void ShowResults(IReadOnlyList<AppTileViewModel> tiles, IReadOnlyList<AppFolderResult> results)
     {
         for (var i = 0; i < results.Count; i++)
@@ -524,5 +613,6 @@ public sealed class AppsViewModel : ObservableObject
         PickDestinationCommand.RaiseCanExecuteChanged();
         CreateCommand.RaiseCanExecuteChanged();
         ThemeExistingCommand.RaiseCanExecuteChanged();
+        ThemeFoldersInsideCommand.RaiseCanExecuteChanged();
     }
 }

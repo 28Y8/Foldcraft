@@ -9,6 +9,9 @@ The first version.
 ### Added
 
 - Customize one folder or many at once, with a live preview at large, 32 px and 16 px sizes
+- Give one app's look to every folder inside another folder, such as each version of that app, as one undoable step
+- A scan adds an item for well-known companies with software on your PC, such as Adobe, using an icon from that software
+- An optional restart as administrator from Settings, which allows folders inside Program Files and ProgramData
 - 16 ready-made colors or any color you type, solid or as a two-color gradient
 - Four folder styles: Windows 11 classic, flat, outline and soft 3D
 - More than 100 built-in symbols with search and categories, an emoji or your own picture

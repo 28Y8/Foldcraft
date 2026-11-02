@@ -19,7 +19,16 @@ public sealed class FolderSafety
     private readonly bool _allowNetworkPaths;
     private readonly List<ProtectedRoot> _roots = [];
 
-    public FolderSafety(FoldcraftPaths paths, ProtectedFolders? protectedFolders = null, bool allowNetworkPaths = false)
+    /// <param name="paths">Where Foldcraft keeps its data.</param>
+    /// <param name="protectedFolders">The folders to refuse. Tests swap these.</param>
+    /// <param name="allowNetworkPaths">Whether a network location can be used.</param>
+    /// <param name="elevated">
+    /// True when running as administrator. Folders inside Program Files and ProgramData are then
+    /// allowed, because only those rights can change them. The two folders themselves stay refused,
+    /// and so does everything else. Other accounts' folders are added, because Windows no longer
+    /// keeps those rights out of them.
+    /// </param>
+    public FolderSafety(FoldcraftPaths paths, ProtectedFolders? protectedFolders = null, bool allowNetworkPaths = false, bool elevated = false)
     {
         ArgumentNullException.ThrowIfNull(paths);
 
@@ -27,11 +36,16 @@ public sealed class FolderSafety
         _allowNetworkPaths = allowNetworkPaths;
 
         AddRoots(folders.Windows, FolderRefusal.WindowsDirectory, subtree: true, "Windows folder");
-        AddRoots(folders.ProgramFiles, FolderRefusal.ProgramFiles, subtree: true, "Program Files");
-        AddRoots(folders.ProgramData, FolderRefusal.ProgramData, subtree: true, "ProgramData");
+        AddRoots(folders.ProgramFiles, FolderRefusal.ProgramFiles, subtree: !elevated, "Program Files");
+        AddRoots(folders.ProgramData, FolderRefusal.ProgramData, subtree: !elevated, "ProgramData");
         AddRoots(folders.AppData, FolderRefusal.AppData, subtree: true, "AppData");
         AddRoots(folders.UserProfiles, FolderRefusal.UserProfileRoot, subtree: false, "user profile folder");
         AddRoots([paths.DataDirectory], FolderRefusal.FoldcraftData, subtree: true, "Foldcraft data folder");
+
+        if (elevated)
+        {
+            AddRoots(folders.OtherProfiles, FolderRefusal.OtherAccount, subtree: true, "folders of another account");
+        }
     }
 
     /// <summary>Finds an existing folder's true path. Tests swap this to reach routes they may not take.</summary>

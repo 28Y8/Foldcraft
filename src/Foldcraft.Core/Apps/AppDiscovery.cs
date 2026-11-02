@@ -103,6 +103,8 @@ public sealed class AppDiscovery
 
         var unique = RemoveDuplicates(found);
 
+        unique.AddRange(AppCompanies.For(unique).ToArray());
+
         return new AppScanReport
         {
             Apps = unique.OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase).Take(MaxApps).ToArray(),

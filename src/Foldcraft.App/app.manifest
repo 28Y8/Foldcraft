@@ -2,7 +2,7 @@
 <assembly manifestVersion="1.0" xmlns="urn:schemas-microsoft-com:asm.v1">
   <assemblyIdentity version="0.1.0.0" name="Foldcraft" />
 
-  <!-- Foldcraft never needs administrator rights. Do not change this level. -->
+  <!-- Foldcraft doesn't require administrator rights, and asks for them only from Settings. Do not change this level. -->
   <trustInfo xmlns="urn:schemas-microsoft-com:asm.v2">
     <security>
       <requestedPrivileges xmlns="urn:schemas-microsoft-com:asm.v3">

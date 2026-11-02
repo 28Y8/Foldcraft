@@ -33,7 +33,9 @@ Every path is reduced to its true form first, so a different spelling can't get 
 
 A cloud-synced folder is the one kind of redirect allowed through, and only once Foldcraft has confirmed that's what it is.
 
-Refused means refused. Nothing in the app can turn these checks off. The Apps and Games screen goes through the same checks, which is why many games can't be changed where they're installed.
+Refused means refused, with one exception. If you press **Restart as Administrator** in Settings and agree to the Windows prompt, Foldcraft allows folders inside Program Files and ProgramData. Program Files and ProgramData themselves stay refused, and so does everything else on this list, including the Windows folder and AppData. The folders of other Windows accounts are refused too, because Windows no longer keeps Foldcraft out of them. Nothing else in the app can turn these checks off. A change made this way can only be undone while running as administrator, and an app update may remove the look by replacing the folder.
+
+The Apps and Games screen goes through the same checks, which is why many games can't be changed where they're installed.
 
 ## The undo history
 
@@ -74,7 +76,7 @@ Things that come from outside the app are treated as untrusted:
 
 ## Permissions and privacy
 
-- Foldcraft runs as your normal account and never asks for administrator rights. Its manifest is set to `asInvoker`.
+- Foldcraft runs as your normal account and doesn't require administrator rights. Its manifest is set to `asInvoker`. It asks for those rights only when you press **Restart as Administrator** in Settings, which closes it and opens it again after a Windows prompt. Use it on an account that's already an administrator. If you sign in to the prompt as a different account, Foldcraft runs as that account, with its data folder and undo history, and refuses your own folders. A look it applies may not show for you, because the icon sits in that account's folder.
 - There's no service, no scheduled task and nothing that starts with Windows. Rules run only when you press Preview and then Apply.
 - There's no telemetry. Foldcraft contacts GitHub only to check for and download updates, and it sends no personal data and no information about your folders. GitHub sees your IP address, as any website does. [Updates](#updates) has the details, and you can turn the check off in Settings.
 - Links on the About screen, in the update banner and on the Settings screen open your browser when you press them.

@@ -1,3 +1,5 @@
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows;
 using Foldcraft.App.Services;
 using Foldcraft.App.Services.Updates;
@@ -13,6 +15,8 @@ namespace Foldcraft.App;
 /// </summary>
 public partial class App : Application
 {
+    private static readonly TimeSpan CloseTimeout = TimeSpan.FromSeconds(5);
+
     private SingleInstance? _instance;
     private AppServices? _services;
 
@@ -25,6 +29,7 @@ public partial class App : Application
         var paths = options.ResolvePaths();
 
         WorkingFolder.MoveToAppFolder();
+        WaitForClose(options.ReplacesProcess);
 
         _instance = new SingleInstance(paths.DataDirectory);
 
@@ -56,7 +61,8 @@ public partial class App : Application
                 executablePath: Environment.ProcessPath,
                 customDataDirectory: options.DataDirectory,
                 appRoots: AppDiscoveryRoots.Detect(registry),
-                updates: VelopackUpdateService.ForThisApp(log));
+                updates: VelopackUpdateService.ForThisApp(log),
+                elevation: new WindowsElevation());
 
             _services = services;
             services.PreviewWatch.Start();
@@ -83,6 +89,30 @@ public partial class App : Application
         _services?.PreviewWatch.Dispose();
         _instance?.Dispose();
         base.OnExit(e);
+    }
+
+    /// <summary>
+    /// A restart as administrator begins before the old copy has closed, and that copy would
+    /// otherwise count as already running. Waiting is all that's done with the number, so a wrong
+    /// one costs a moment at most.
+    /// </summary>
+    private static void WaitForClose(int? processId)
+    {
+        if (processId is not { } id)
+        {
+            return;
+        }
+
+        try
+        {
+            using var previous = Process.GetProcessById(id);
+
+            previous.WaitForExit(CloseTimeout);
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or Win32Exception)
+        {
+            // It has already gone, which is what this was waiting for.
+        }
     }
 
     private static async Task StartAsync(ShellViewModel shell, string? customizePath, CrashGuard guard)

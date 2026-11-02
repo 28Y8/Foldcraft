@@ -19,6 +19,12 @@ public sealed record ProtectedFolders
 
     public IReadOnlyList<string> AppData { get; init; } = [];
 
+    /// <summary>
+    /// Every other account's profile. Windows keeps a normal copy out of these by itself, but not
+    /// one running as administrator, so that's when they're refused.
+    /// </summary>
+    public IReadOnlyList<string> OtherProfiles { get; init; } = [];
+
     public static ProtectedFolders Detect()
     {
         var profile = Known(Environment.SpecialFolder.UserProfile);
@@ -36,7 +42,29 @@ public sealed record ProtectedFolders
                 Known(Environment.SpecialFolder.ApplicationData),
                 Known(Environment.SpecialFolder.LocalApplicationData),
                 string.IsNullOrEmpty(profile) ? null : Path.Combine(profile, "AppData")),
+            OtherProfiles = ProfilesBeside(profile),
         };
+    }
+
+    /// <summary>The folders next to a profile, which are the other accounts'. Public is shared, so it isn't one.</summary>
+    private static string[] ProfilesBeside(string profile)
+    {
+        if (string.IsNullOrEmpty(profile) || Path.GetDirectoryName(profile) is not { } parent)
+        {
+            return [];
+        }
+
+        try
+        {
+            return Directory.EnumerateDirectories(parent)
+                .Where(path => !path.Equals(profile, StringComparison.OrdinalIgnoreCase))
+                .Where(path => !Path.GetFileName(path).Equals("Public", StringComparison.OrdinalIgnoreCase))
+                .ToArray();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     private static string Known(Environment.SpecialFolder folder) =>

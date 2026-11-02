@@ -35,6 +35,10 @@ public sealed class AppServices
     /// Where updates come from. With none the app says it can't update itself, so only the real
     /// app, which passes one on purpose, can ever reach the network.
     /// </param>
+    /// <param name="elevation">
+    /// Administrator rights. With none the app runs without them, so only the real app, which
+    /// passes one on purpose, can ever show a Windows prompt.
+    /// </param>
     public AppServices(
         FoldcraftPaths paths,
         ProtectedFolders? protectedFolders = null,
@@ -46,12 +50,14 @@ public sealed class AppServices
         string? customDataDirectory = null,
         AppDiscoveryRoots? appRoots = null,
         IAppIconReader? iconReader = null,
-        IUpdateService? updates = null)
+        IUpdateService? updates = null,
+        IElevation? elevation = null)
     {
         Paths = paths ?? throw new ArgumentNullException(nameof(paths));
         Log = log ?? new FileLog(paths.LogFile);
         Time = time ?? TimeProvider.System;
-        Safety = new FolderSafety(paths, protectedFolders);
+        Elevation = elevation ?? new NoElevation();
+        Safety = new FolderSafety(paths, protectedFolders, elevated: Elevation.IsElevated);
         Journal = new ChangeJournal(paths.JournalFile);
         Renderer = new IconRenderer();
         Icons = new IconLibrary(paths, Renderer);
@@ -103,4 +109,5 @@ public sealed class AppServices
     public string? ExecutablePath { get; }
     public string? CustomDataDirectory { get; }
     public IUpdateService Updates { get; }
+    public IElevation Elevation { get; }
 }

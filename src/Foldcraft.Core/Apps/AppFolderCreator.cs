@@ -64,6 +64,9 @@ public sealed record AppFolderResult
     public FolderRefusal? Refusal { get; init; }
     public string? Message { get; init; }
 
+    /// <summary>True for an existing folder that already had the look, so nothing changed and there's nothing to undo.</summary>
+    public bool AlreadyHadLook { get; init; }
+
     /// <summary>What happened to the app's own install folder, if the user asked for that.</summary>
     public FolderApplyResult? InstallFolder { get; init; }
 }
@@ -143,8 +146,27 @@ public sealed partial class AppFolderCreator
     /// </summary>
     public AppFolderResult ThemeExisting(AppFolderRequest request, string folder)
     {
-        ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(folder);
+
+        return ThemeExisting(request, [folder])[0];
+    }
+
+    /// <summary>
+    /// Gives several folders that already exist the same look, such as every version of one app.
+    /// The whole run undoes as one step, and the results are in the order of the folders.
+    /// </summary>
+    /// <param name="request">The look to use.</param>
+    /// <param name="folders">The folders to change.</param>
+    /// <param name="cancellationToken">Stops before the next folder. One already started finishes.</param>
+    /// <param name="progress">Told about each folder as it finishes.</param>
+    public IReadOnlyList<AppFolderResult> ThemeExisting(
+        AppFolderRequest request,
+        IReadOnlyList<string> folders,
+        CancellationToken cancellationToken = default,
+        IProgress<FolderApplyResult>? progress = null)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(folders);
 
         FolderIconSpec spec;
 
@@ -154,17 +176,44 @@ public sealed partial class AppFolderCreator
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            return Outcome(request, AppFolderOutcome.Failed, null, ex.Message);
+            return folders.Select(_ => Outcome(request, AppFolderOutcome.Failed, null, ex.Message)).ToArray();
         }
 
-        var applied = _customizer.ApplyEach([new FolderLook(folder, spec)]).Results[0];
+        var looks = folders.Select(folder => new FolderLook(folder, spec)).ToArray();
 
-        return applied.Outcome switch
+        return _customizer.ApplyEach(looks, cancellationToken, progress).Results.Select(applied => applied.Outcome switch
         {
-            ApplyOutcome.Applied or ApplyOutcome.Unchanged => Outcome(request, AppFolderOutcome.Themed, applied.ResolvedPath),
+            ApplyOutcome.Applied => Outcome(request, AppFolderOutcome.Themed, applied.ResolvedPath),
+            ApplyOutcome.Unchanged => Outcome(request, AppFolderOutcome.Themed, applied.ResolvedPath) with { AlreadyHadLook = true },
             ApplyOutcome.Refused => Outcome(request, AppFolderOutcome.Refused, null, applied.Message) with { Refusal = applied.Refusal },
+            ApplyOutcome.Canceled => Outcome(request, AppFolderOutcome.Canceled),
+            ApplyOutcome.FailedRollbackIncomplete => Outcome(request, AppFolderOutcome.LeftUnfinished, applied.ResolvedPath, applied.Message),
             _ => Outcome(request, AppFolderOutcome.Failed, applied.ResolvedPath, applied.Message),
+        }).ToArray();
+    }
+
+    /// <summary>
+    /// Lists the folders directly inside one, in name order, leaving out hidden folders, system
+    /// folders and links. This only reads. A folder that can't be read has nothing to list.
+    /// </summary>
+    public static IReadOnlyList<string> FoldersInside(string parent)
+    {
+        ArgumentNullException.ThrowIfNull(parent);
+
+        var options = new EnumerationOptions
+        {
+            AttributesToSkip = FileAttributes.Hidden | FileAttributes.System | FileAttributes.ReparsePoint,
+            IgnoreInaccessible = true,
         };
+
+        try
+        {
+            return Directory.EnumerateDirectories(parent, "*", options).Order(StringComparer.OrdinalIgnoreCase).ToArray();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return [];
+        }
     }
 
     private AppFolderResult CreateOne(AppFolderRequest request, string destination, AppFolderOptions options, Guid batchId)

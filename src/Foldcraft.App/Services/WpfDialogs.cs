@@ -108,9 +108,26 @@ public sealed class WpfDialogs : IDialogs
     public void ShowError(string message) =>
         Ask("Foldcraft", message, null, [new PromptButton("OK", IsPrimary: true, IsCancel: true)]);
 
-    public void OpenLink(string url) => Process.Start(StartInfoFor(url))?.Dispose();
+    public void OpenLink(string url) => Process.Start(StartInfoForLink(url, new WindowsElevation().IsElevated))?.Dispose();
 
     public void OpenFolder(string path) => Process.Start(StartInfoFor(path))?.Dispose();
+
+    /// <summary>
+    /// A browser started directly would inherit administrator rights. Explorer hands a link to the
+    /// shell that's already running without them.
+    /// </summary>
+    public static ProcessStartInfo StartInfoForLink(string url, bool elevated)
+    {
+        var start = StartInfoFor(url);
+
+        if (elevated)
+        {
+            start.FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+            start.ArgumentList.Add(url);
+        }
+
+        return start;
+    }
 
     /// <summary>
     /// A new process inherits the working folder, and Foldcraft's own is the app folder. A browser

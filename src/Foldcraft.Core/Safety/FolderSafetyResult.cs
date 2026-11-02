@@ -19,6 +19,7 @@ public enum FolderRefusal
     ContainsProtectedFolder,
     SystemVolumeFolder,
     Unresolvable,
+    OtherAccount,
 }
 
 /// <summary>

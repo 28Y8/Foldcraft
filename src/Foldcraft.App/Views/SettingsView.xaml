@@ -98,6 +98,16 @@
                     </DockPanel>
                 </Border>
 
+                <TextBlock Text="Administrator rights" Style="{StaticResource SettingGroup}" />
+
+                <Border Style="{StaticResource SettingCard}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Left" Text="&#xE7EF;" Style="{StaticResource SettingIcon}" />
+                        <Button DockPanel.Dock="Right" Content="Restart as Administrator" Command="{Binding RestartAsAdministratorCommand}" Margin="16,0,0,0" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding AdministratorExplanation}" Style="{StaticResource Caption}" VerticalAlignment="Center" />
+                    </DockPanel>
+                </Border>
+
                 <TextBlock Text="Foldcraft's own files" Style="{StaticResource SettingGroup}" />
 
                 <Border Style="{StaticResource SettingCard}">

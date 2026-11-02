@@ -195,7 +195,8 @@ internal sealed class AppHarness : IDisposable
         IAppIconReader? iconReader = null,
         IUpdateService? updates = null,
         string? customDataDirectory = null,
-        Action<Sandbox>? prepare = null)
+        Action<Sandbox>? prepare = null,
+        IElevation? elevation = null)
     {
         Box = new Sandbox();
         prepare?.Invoke(Box);
@@ -215,7 +216,8 @@ internal sealed class AppHarness : IDisposable
             customDataDirectory,
             appRoots: Pc.Roots,
             iconReader: iconReader,
-            updates: updates);
+            updates: updates,
+            elevation: elevation);
 
         Shell = new ShellViewModel(Services, Dialogs, TimeSpan.Zero, Appearance);
     }

@@ -627,6 +627,129 @@ public sealed class AppsViewModelTests : IDisposable
     }
 
     [Fact]
+    public async Task The_hint_follows_the_selected_item()
+    {
+        Assert.Contains("Press Scan", Apps.ApplyHint);
+
+        var tile = await ScanOneAsync();
+
+        Assert.Contains("Click an app", Apps.ApplyHint);
+
+        Apps.SelectedTile = tile;
+
+        Assert.Contains(tile.Name, Apps.ApplyHint);
+    }
+
+    [Fact]
+    public async Task Every_folder_inside_one_can_take_the_look_in_one_go()
+    {
+        var tile = await ScanOneAsync();
+        var parent = _app.Box.NewFolder("Versions");
+        var first = Directory.CreateDirectory(Path.Combine(parent, "1.0")).FullName;
+        var second = Directory.CreateDirectory(Path.Combine(parent, "2.0")).FullName;
+
+        Apps.SelectedTile = tile;
+        _app.Dialogs.FolderToPick = parent;
+        await Apps.ThemeFoldersInsideCommand.ExecuteAsync();
+
+        Assert.True(File.Exists(Sandbox.IniPath(first)));
+        Assert.True(File.Exists(Sandbox.IniPath(second)));
+        Assert.False(File.Exists(Sandbox.IniPath(parent)));
+        Assert.Equal(["1.0", "2.0"], Apps.Results.Select(row => row.Name));
+        Assert.Contains("Change 2 folders?", _app.Dialogs.Confirmations);
+        Assert.Contains("Gave 2 folders this look", Apps.Summary);
+    }
+
+    [Fact]
+    public async Task Folders_that_already_have_the_look_are_not_claimed_as_changed()
+    {
+        var tile = await ScanOneAsync();
+        var parent = _app.Box.NewFolder("Versions");
+        Directory.CreateDirectory(Path.Combine(parent, "1.0"));
+
+        Apps.SelectedTile = tile;
+        _app.Dialogs.FolderToPick = parent;
+        await Apps.ThemeFoldersInsideCommand.ExecuteAsync();
+        await Apps.ThemeFoldersInsideCommand.ExecuteAsync();
+
+        Assert.Equal("1 folder already had it.", Apps.Summary);
+        Assert.Equal("Already has this look.", Apps.Results[0].Message);
+    }
+
+    [Fact]
+    public void A_folder_left_half_finished_says_where_to_put_it_right()
+    {
+        var result = new AppFolderResult
+        {
+            AppId = "test", AppName = "Paper Boat", Outcome = AppFolderOutcome.LeftUnfinished, FolderPath = @"D:\Apps\1.0",
+        };
+
+        Assert.Contains("History", PlainEnglish.AppFolderResult(result));
+        Assert.Contains("1 couldn't be changed", PlainEnglish.ThemedFoldersSummary([result]));
+    }
+
+    [Fact]
+    public void A_failure_on_an_existing_folder_does_not_say_it_was_making_one()
+    {
+        var result = new AppFolderResult
+        {
+            AppId = "test", AppName = "Paper Boat", Outcome = AppFolderOutcome.Failed, FolderPath = @"D:\Apps\1.0",
+            Message = @"Access to the path 'D:\Apps\1.0' is denied.",
+        };
+
+        Assert.DoesNotContain("make this folder", PlainEnglish.AppFolderResult(result));
+    }
+
+    [Fact]
+    public void A_folder_Windows_locked_says_how_to_get_past_it()
+    {
+        var failed = new FolderApplyResult
+        {
+            RequestedPath = @"D:\Apps\Tool", Outcome = ApplyOutcome.Failed, Message = @"Access to the path 'D:\Apps\Tool\x.tmp' is denied. The folder was put back as it was.",
+        };
+        var restore = new FolderRestoreResult(@"D:\Apps\Tool", RestoreOutcome.Failed, "Access is denied.");
+
+        Assert.Equal(PlainEnglish.NoPermission, PlainEnglish.ApplyResult(failed));
+        Assert.Equal(PlainEnglish.NoPermission, PlainEnglish.RestoreResult(restore));
+    }
+
+    [Fact]
+    public void A_folder_put_back_with_a_note_is_not_called_a_failure()
+    {
+        var restored = new FolderRestoreResult(@"D:\Apps\Tool", RestoreOutcome.Restored, "Access is denied.");
+
+        Assert.NotEqual(PlainEnglish.NoPermission, PlainEnglish.RestoreResult(restored));
+    }
+
+    [Fact]
+    public async Task Saying_no_to_the_question_changes_no_folders()
+    {
+        var tile = await ScanOneAsync();
+        var parent = _app.Box.NewFolder("Versions");
+        var first = Directory.CreateDirectory(Path.Combine(parent, "1.0")).FullName;
+
+        Apps.SelectedTile = tile;
+        _app.Dialogs.FolderToPick = parent;
+        _app.Dialogs.ConfirmAnswer = false;
+        await Apps.ThemeFoldersInsideCommand.ExecuteAsync();
+
+        Assert.False(File.Exists(Sandbox.IniPath(first)));
+    }
+
+    [Fact]
+    public async Task A_folder_with_nothing_inside_says_so_without_asking()
+    {
+        var tile = await ScanOneAsync();
+
+        Apps.SelectedTile = tile;
+        _app.Dialogs.FolderToPick = _app.Box.NewFolder("Empty");
+        await Apps.ThemeFoldersInsideCommand.ExecuteAsync();
+
+        Assert.Empty(_app.Dialogs.Confirmations);
+        Assert.Contains("no folders inside it", Apps.Summary);
+    }
+
+    [Fact]
     public async Task Created_folders_appear_in_history_as_created_and_undo_says_what_stayed()
     {
         Pc.AddApp("Paper Boat", Color.Teal);

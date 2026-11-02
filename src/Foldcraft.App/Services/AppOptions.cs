@@ -8,18 +8,24 @@ namespace Foldcraft.App.Services;
 /// A folder to open with. This comes from outside the app, so it's only ever a suggestion: the
 /// path goes through the same safety check as a folder added by hand, and nothing is applied.
 /// </param>
-public sealed record AppOptions(string? DataDirectory, string? CustomizePath = null)
+/// <param name="ReplacesProcess">A copy this start waits for, because it's closing to make way for this one.</param>
+public sealed record AppOptions(string? DataDirectory, string? CustomizePath = null, int? ReplacesProcess = null)
 {
-    private const string DataDirectoryOption = "--data-dir";
+    public const string DataDirectoryOption = "--data-dir";
+    public const string ReplacesOption = "--replaces";
     private const string CustomizeOption = "--customize";
 
-    /// <summary>Understands <c>--data-dir &lt;path&gt;</c> and <c>--customize &lt;path&gt;</c>. Anything else is ignored.</summary>
+    /// <summary>
+    /// Understands <c>--data-dir &lt;path&gt;</c>, <c>--customize &lt;path&gt;</c> and
+    /// <c>--replaces &lt;process id&gt;</c>. Anything else is ignored.
+    /// </summary>
     public static AppOptions Parse(IReadOnlyList<string> args)
     {
         ArgumentNullException.ThrowIfNull(args);
 
         string? dataDirectory = null;
         string? customizePath = null;
+        int? replacesProcess = null;
 
         for (var i = 0; i < args.Count - 1; i++)
         {
@@ -41,9 +47,14 @@ public sealed record AppOptions(string? DataDirectory, string? CustomizePath = n
                 customizePath ??= value;
                 i++;
             }
+            else if (string.Equals(args[i], ReplacesOption, StringComparison.OrdinalIgnoreCase) && int.TryParse(value, out var processId))
+            {
+                replacesProcess ??= processId;
+                i++;
+            }
         }
 
-        return new AppOptions(dataDirectory, customizePath);
+        return new AppOptions(dataDirectory, customizePath, replacesProcess);
     }
 
     /// <summary>

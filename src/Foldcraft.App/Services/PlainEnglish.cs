@@ -71,6 +71,13 @@ public static partial class PlainEnglish
     /// <summary>Explorer and the older Windows APIs it relies on stop at this many characters.</summary>
     private const int ShellPathLimit = 260;
 
+    /// <summary>The way into a place that's only refused without administrator rights. It has to hold with them too.</summary>
+    private const string NeedsAdministrator = " Folders inside it can be changed when Foldcraft runs as administrator.";
+
+    /// <summary>Windows said no to this account, as it does for a folder an installer locked.</summary>
+    public const string NoPermission =
+        "Windows blocked changes to this folder, which usually takes administrator rights. Restart as administrator from Settings to try again.";
+
     private const string CouldNotChange =
         "Foldcraft couldn't change this folder. It may be read-only or in use.";
 
@@ -90,11 +97,12 @@ public static partial class PlainEnglish
         FolderRefusal.NetworkPath => "Folders on a network aren't supported.",
         FolderRefusal.ReparsePoint => "This is a link to another location, so Foldcraft leaves it alone.",
         FolderRefusal.WindowsDirectory => "This is part of Windows, so Foldcraft leaves it alone.",
-        FolderRefusal.ProgramFiles => "This is where apps are installed, so Foldcraft leaves it alone.",
-        FolderRefusal.ProgramData => "Apps keep shared data here, so Foldcraft leaves it alone.",
+        FolderRefusal.ProgramFiles => "This is where apps are installed, so Foldcraft leaves it alone." + NeedsAdministrator,
+        FolderRefusal.ProgramData => "Apps keep shared data here, so Foldcraft leaves it alone." + NeedsAdministrator,
         FolderRefusal.UserProfileRoot =>
             "This is your main user folder, so Foldcraft leaves it alone. Folders inside it, like Documents, are fine.",
         FolderRefusal.AppData => "Apps keep their private files here, so Foldcraft leaves it alone.",
+        FolderRefusal.OtherAccount => "This belongs to another Windows account, so Foldcraft leaves it alone.",
         FolderRefusal.FoldcraftData => "Foldcraft keeps its own files here, so it leaves this folder alone.",
         FolderRefusal.ContainsProtectedFolder =>
             "This folder contains important Windows or app folders, so Foldcraft leaves it alone.",
@@ -120,7 +128,7 @@ public static partial class PlainEnglish
             ApplyOutcome.FailedRollbackIncomplete =>
                 "Something went wrong and this folder may be half finished. Restore it from the History screen.",
             ApplyOutcome.Canceled => "Skipped because you canceled.",
-            _ => Failure(result.Message, CouldNotChange),
+            _ => FailureOrPermission(result.Message, CouldNotChange),
         };
     }
 
@@ -140,7 +148,7 @@ public static partial class PlainEnglish
             RestoreOutcome.Forgotten => "Kept as it is. Foldcraft no longer tracks this change.",
             RestoreOutcome.DifferentFolder => Failure(result.Message, "A different folder is at this location now, so it was left alone."),
             RestoreOutcome.Relocated => "Found at its new location.",
-            _ => Failure(result.Message, CouldNotRestore),
+            _ => FailureOrPermission(result.Message, CouldNotRestore),
         };
     }
 
@@ -153,7 +161,7 @@ public static partial class PlainEnglish
         {
             RepairOutcome.Repaired => "Icon repaired.",
             RepairOutcome.NotRepairable => Failure(result.Message, "Foldcraft can't repair this folder's icon."),
-            _ => Failure(result.Message, "Foldcraft couldn't repair this folder's icon. It was left as it was."),
+            _ => FailureOrPermission(result.Message, "Foldcraft couldn't repair this folder's icon. It was left as it was."),
         };
     }
 
@@ -380,15 +388,51 @@ public static partial class PlainEnglish
             AppFolderOutcome.Created => MayNotShowInExplorer(result.FolderPath ?? string.Empty)
                 ? "Created, but Windows can't show this look at a location this long."
                 : "Created.",
-            AppFolderOutcome.Themed => "Done.",
+            AppFolderOutcome.Themed => MayNotShowInExplorer(result.FolderPath ?? string.Empty)
+                ? "Saved, but Windows can't show this look at a location this long."
+                : result.AlreadyHadLook ? "Already has this look." : "Done.",
             AppFolderOutcome.NameTaken => "Skipped, because something already has this name.",
             AppFolderOutcome.Refused => result.Refusal is { } refusal ? Refusal(refusal) : CouldNotChange,
             AppFolderOutcome.Canceled => "Skipped because you canceled.",
-            AppFolderOutcome.LeftUnfinished => "Something went wrong and this folder may be half made. Undo it from the History screen.",
-            _ => Failure(result.Message, "Foldcraft couldn't make this folder. Nothing was left behind."),
+            AppFolderOutcome.LeftUnfinished => "Something went wrong and this folder may be half finished. Undo it from the History screen.",
+            _ => FailureOrPermission(result.Message, result.FolderPath is null ? "Foldcraft couldn't make this folder. Nothing was left behind." : CouldNotChange),
         };
 
         return result.InstallFolder is { } install ? $"{main} Install folder: {ApplyResult(install)}" : main;
+    }
+
+    /// <summary>What happened when one look went on many folders that already exist.</summary>
+    public static string ThemedFoldersSummary(IReadOnlyCollection<AppFolderResult> results)
+    {
+        ArgumentNullException.ThrowIfNull(results);
+
+        var themed = results.Count(r => r.Outcome == AppFolderOutcome.Themed && !r.AlreadyHadLook);
+        var already = results.Count(r => r.Outcome == AppFolderOutcome.Themed && r.AlreadyHadLook);
+        var canceled = results.Count(r => r.Outcome == AppFolderOutcome.Canceled);
+        var problems = results.Count - themed - already - canceled;
+        var parts = new List<string>();
+
+        if (themed > 0)
+        {
+            parts.Add($"Gave {Folders(themed)} this look. You can undo this from History.");
+        }
+
+        if (already > 0)
+        {
+            parts.Add($"{Folders(already)} already had it.");
+        }
+
+        if (problems > 0)
+        {
+            parts.Add($"{problems} couldn't be changed.");
+        }
+
+        if (canceled > 0)
+        {
+            parts.Add($"{canceled} skipped.");
+        }
+
+        return parts.Count == 0 ? "Nothing to do." : string.Join(' ', parts);
     }
 
     public static string AppFolderSummary(IReadOnlyCollection<AppFolderResult> results)
@@ -597,6 +641,16 @@ public static partial class PlainEnglish
     private static string Failure(string? message, string fallback) =>
         string.IsNullOrWhiteSpace(message) || Technical().IsMatch(message) ? fallback : message;
 
+    /// <summary>
+    /// Installers often lock their folders so only administrators can write to them, wherever they
+    /// are. That has a way out, so it's said plainly and not hidden behind a general failure.
+    /// </summary>
+    private static string FailureOrPermission(string? message, string fallback) =>
+        message is not null && Denied().IsMatch(message) ? NoPermission : Failure(message, fallback);
+
     [GeneratedRegex(@"desktop\.ini|journal|reparse|junction|access to the path|0x[0-9a-f]+|exception", RegexOptions.IgnoreCase)]
     private static partial Regex Technical();
+
+    [GeneratedRegex(@"access to the path .*denied|access is denied", RegexOptions.IgnoreCase | RegexOptions.Singleline)]
+    private static partial Regex Denied();
 }

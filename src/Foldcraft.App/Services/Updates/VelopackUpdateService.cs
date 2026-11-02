@@ -1,7 +1,9 @@
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Foldcraft.Core.Updates;
+using Microsoft.Win32.SafeHandles;
 using Velopack;
 using Velopack.Sources;
 
@@ -144,16 +146,35 @@ public sealed class VelopackUpdateService : IUpdateService
         _manager.WaitExitThenApplyUpdates(package, silent: false, restart: true, restartArguments.ToArray());
     }
 
-    /// <summary>Null for a process that has ended or that this one isn't allowed to look at.</summary>
+    /// <summary>
+    /// Null for a process that has ended. This asks for the least Windows offers, because a copy
+    /// running as administrator refuses anything more, and it's the copy that most needs seeing.
+    /// </summary>
     private static string? PathOf(Process process)
     {
         try
         {
-            return process.MainModule?.FileName;
+            using var handle = OpenProcess(QueryLimitedInformation, false, process.Id);
+
+            var path = new char[MaxPathLength];
+            var length = path.Length;
+
+            return !handle.IsInvalid && QueryFullProcessImageName(handle, 0, path, ref length) ? new string(path, 0, length) : null;
         }
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
             return null;
         }
     }
+
+    private const int QueryLimitedInformation = 0x1000;
+
+    private const int MaxPathLength = 32768;
+
+    [DllImport("kernel32.dll", SetLastError = true)]
+    private static extern SafeProcessHandle OpenProcess(int access, [MarshalAs(UnmanagedType.Bool)] bool inheritHandle, int processId);
+
+    [DllImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW", CharSet = CharSet.Unicode, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool QueryFullProcessImageName(SafeProcessHandle process, int flags, [Out] char[] path, ref int length);
 }
