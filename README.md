@@ -20,7 +20,7 @@ Every change can be undone, and Foldcraft never needs administrator rights.
 
 ![Twelve folders drawn by Foldcraft in different styles and colors, with symbols and badges.](docs/images/folder-gallery.png)
 
-Foldcraft is at an early stage and has only been run on one Windows 11 PC. Downloads are on the [Releases page](https://github.com/28Y8/Foldcraft/releases). If there's nothing there yet, [build it from source](CONTRIBUTING.md#getting-set-up). The installer isn't signed, so Windows SmartScreen may warn you the first time you run it. If it does, choose **More info** and then **Run anyway**.
+Foldcraft is at an early stage and has only been run on one Windows 11 PC.
 
 <details>
 <summary><b>Screenshots</b> (click to read more)</summary>
@@ -32,6 +32,17 @@ Foldcraft is at an early stage and has only been run on one Windows 11 PC. Downl
 | ![The Apps and Games screen with eight sample apps, each with a folder in matching colors. The icons in this picture were drawn for it.](docs/images/apps-and-games.png) | ![The History screen: two changes that can each be undone, with the folders of the first one listed and a Restore Original button next to each.](docs/images/history.png) |
 
 </details>
+
+## Download
+
+1. Open the [latest release](https://github.com/28Y8/Foldcraft/releases/latest).
+2. Under **Assets**, download `FoldcraftApp-win-Setup.exe`.
+3. Run it. It installs for your account only and needs no administrator rights.
+4. The installer isn't signed, so Windows SmartScreen may warn you. If it does, choose **More info** and then **Run anyway**.
+
+Prefer not to install anything? Download the `.zip` from the same page, extract it and run `Foldcraft.exe`. That copy can't update itself.
+
+If there's no release yet, [build it from source](CONTRIBUTING.md#getting-set-up).
 
 ## How it works
 
