@@ -124,6 +124,10 @@ Uninstalling removes the entry through the same code, and only if it starts the 
 
 ## Installing and updating
 
+Download `FoldcraftApp-win-Setup.exe` from the [Releases page](https://github.com/28Y8/Foldcraft/releases). If SmartScreen says it protected your PC, choose **More info** and then **Run anyway**. It shows up because the installer isn't signed. .NET comes included.
+
+The `Foldcraft-...-win-x64.zip` on the same page runs from any folder of its own, and that copy can't update itself. To remove one, press **Remove All Changes** in Settings if you want your folders put back, and then delete its folder.
+
 The installer is built with [Velopack](https://velopack.io). It's per-user, so it needs no administrator rights:
 
 | Path | What's there |
@@ -154,6 +158,24 @@ Automatic install on the next start, which Velopack does by default, is turned o
 | `--customize "<folder>"` | Adds a folder to the list. If Foldcraft is already open, the folder joins that window. Nothing changes until you press Apply |
 | `--data-dir "<folder>"` | Uses another data folder, which is handy for trying the app without touching your real one |
 
+## Known limitations
+
+- Only tested on one Windows 11 PC. It hasn't been tried on Windows 10.
+- The installer and the app aren't signed, so Windows SmartScreen may warn you the first time you run them. Update packages are checked against the hash recorded in their release, but they aren't code signed.
+- The installer, a real update from GitHub and a real uninstall haven't been run on a PC yet. Updating was tested from start to finish with a portable copy and a local folder standing in for GitHub.
+- A File Explorer window that was already open can keep the old look until you close and reopen it. Foldcraft tells Explorer about each change, but it never restarts Explorer. In testing with a shell view hosted in a test program, a first look showed up within seconds and undo brought the preview straight back, but a second custom look stayed hidden until the view was reopened. None of this has been confirmed in a real Explorer window yet.
+- Undo brings a saved preview straight back. A folder with no saved preview for its date, such as one whose files changed while it had its look, needs a new one, and for up to a minute after a window showed the look Windows can't draw it. If a window asks in that time, the folder shows as a plain folder until Foldcraft moves its date one more step, about 75 seconds after the undo. If you close Foldcraft first, that happens the next time you open it. This was tested with a test program standing in for Explorer, not in a real Explorer window.
+- Customized folders use icons stored in `%LOCALAPPDATA%\Foldcraft`. Use **Remove All Changes** in Settings before deleting that folder. Uninstalling leaves it in place, and your folders keep their look.
+- A customized folder shows the look only on PCs that have its icon, so another PC syncing the same folder shows a plain folder.
+- Folders in OneDrive or another cloud service can be customized, but this hasn't been tried on a real synced folder yet. They're treated like any other folder: Foldcraft reads and changes the settings file and the folder's date and lists names when it cleans up after itself. It never opens your other files, so it can't cause them to download, though a settings file that's only online may download when it's read. Windows itself may still read files when it draws a preview, as it does for any folder.
+- If you rename or move a customized folder, Foldcraft can't follow it on its own. **Find Folder** lets you show it the new location.
+- Windows doesn't show a custom look for a folder whose path is about 248 characters or longer. Foldcraft warns you.
+- Folder names that end in a dot or a space are refused, because Windows would treat them as a different folder's name.
+- On Windows 11 the right-click entry appears under **Show more options**, not in the first short menu.
+- Apps from the Microsoft Store usually don't have a Start Menu shortcut Foldcraft can read, so a scan misses most of them.
+- Epic Games support has only been tested against made-up manifests.
+- Emoji are drawn by the Segoe UI Emoji font on your own PC, in color where Windows allows it and in one color otherwise.
+
 ## Project layout
 
 | Path | What's there |
@@ -162,6 +184,6 @@ Automatic install on the next start, which Velopack does by default, is turned o
 | `src/Foldcraft.App` | The WPF app, using .NET's built-in Fluent theme and hand-written MVVM |
 | `tests/Foldcraft.Tests` | xUnit tests for both |
 | `tools` | The script that builds a release and the end-to-end update test |
-| `docs` | These pages and the pictures in the README |
+| `docs` | These pages and pictures of the app |
 
 The folder is drawn at the same size and height as the stock Windows 11 folder so the two line up in File Explorer, but it's drawn from scratch and no stock art is used.

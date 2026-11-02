@@ -11,6 +11,8 @@ Foldcraft changes how folders look and can never damage anything. Every change m
 You need Windows and the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
 
 ```powershell
+git clone https://github.com/28Y8/Foldcraft.git
+cd Foldcraft
 dotnet build
 dotnet test
 ```
@@ -50,7 +52,7 @@ These environment variables save pictures while the tests run. Point them at a f
 
 `Assets/Foldcraft.ico` is the renderer's own output, and a test fails if the two drift apart. If you changed how folders are drawn, run that test once with `FOLDCRAFT_WRITE_APP_ICON=1` to write a fresh one.
 
-The README pictures are real renders of the window on sample folders. The test swaps real paths for sample ones right before each picture and refuses to save one if a real path is left. Read every picture before committing it.
+The pictures in `docs/images` are real renders of the window on sample folders. The test swaps real paths for sample ones right before each picture and refuses to save one if a real path is left. Read every picture before committing it.
 
 ## Art and licensing
 

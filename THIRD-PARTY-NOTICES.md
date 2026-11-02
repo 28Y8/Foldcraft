@@ -50,3 +50,11 @@ The Apps and Games screen reads icons from software already on the PC it runs on
 ## Text
 
 [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) is adapted from the [Contributor Covenant](https://www.contributor-covenant.org) version 2.1, which is under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). That file says what was changed.
+
+## Art
+
+All symbols, badges and folder art are plain vector geometry written for this project. Nothing in the repository comes from a third-party icon set, and it holds no logos.
+
+## Trademarks
+
+Windows, Steam, Roblox, Epic Games, OneDrive and all other product names belong to their owners. They're mentioned only to say what Foldcraft works with. Foldcraft is an independent project and is not affiliated with, endorsed by or sponsored by any of them.
